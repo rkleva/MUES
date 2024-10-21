@@ -1,4 +1,5 @@
 #include "control_lib.h"
+#include "settings.h"
 
 
 // Initalization function for filter
@@ -16,8 +17,7 @@ void filter_calc (filter_t *filter)
     filter->out = filter->out * (1 - filter->coeff) + (filter->coeff * filter->in);
 }
 
-
-float calculate_voltage(Uint16 *adc_vrijednost) {
+float calculate_voltage(int *adc_vrijednost) {
     float uu_mj = (3 * (*adc_vrijednost)) / 4096.0f;
     float napon = uu_mj * (1 / A );
 
@@ -25,7 +25,7 @@ float calculate_voltage(Uint16 *adc_vrijednost) {
 
 }
 
-float calculate_current(Uint16 *adc_vrijednost) {
+float calculate_current(int *adc_vrijednost) {
 
     float u_mj = (3  * (*adc_vrijednost))/4096.0f;
     float struja = (u_mj - 1.65) / (10 * R_sh);

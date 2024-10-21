@@ -7,14 +7,12 @@
 
 #ifndef CONTROL_LIB_H_
 #define CONTROL_LIB_H_
-
 #define VREFLO 0
 #define VREFHI 3
 #define R_sh 0.01
 #define A  (4.99/(4.99 + 34.8))
 #define U_B 24.0f
 #define I_B 2.0f
-
 
 
 /*-----------------------------------------------------------------------------
@@ -37,5 +35,8 @@ Prototype functions
 ----------------------------------------------------------------------------------*/
 void filter_init (filter_t *filter, float tf, float t_samp);
 void filter_calc (filter_t *filter);
-
+float calculate_current(int *adc_vrijednost);
+float calculate_voltage(int *adc_vrijednost);
+float calculate_voltage_pu(float *value);
+float calculate_current_pu(float *value);
 #endif //CONTROL_LIB_H_

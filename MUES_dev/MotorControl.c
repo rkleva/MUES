@@ -14,13 +14,13 @@ Uint32 IsrTicker = 0;
 /*
  * Primjer deklaracije varijabli za citanje vrijednosti registara
  */
-Uint16 Ia_regs = 0;
-Uint16 Ib_regs = 0;
-Uint16 Ic_regs = 0;
-Uint16 Ua_regs = 0;
-Uint16 Ub_regs = 0;
-Uint16 Uc_regs = 0;
-Uint16 Udc_regs = 0;
+int Ia_regs = 0;
+int Ib_regs = 0;
+int Ic_regs = 0;
+int Ua_regs = 0;
+int Ub_regs = 0;
+int Uc_regs = 0;
+int Udc_regs = 0;
 
 Uint32 Ia_cal = 0;
 Uint32 Ib_cal = 0;
@@ -40,6 +40,10 @@ float Ic_pu = 0;
 float Ua_pu = 0;
 float Ub_pu = 0;
 float Uc_pu = 0;
+
+float Ia_0 = 0;
+float Ib_0 = 0;
+float Ic_0 = 0;
 
 
 
@@ -129,9 +133,6 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     * Prikazan je primjer citanja vrijednosti registra i zapis vrijednosti u proizvoljno deklarirane pomocne varijable.
     * Prema potrebi, vrijednost registra se moze pohraniti u vlastitu strukturu ili varijablu umjesto u prikazane.
     *
-    *
-    *
-    *
     * Registri ADC-a podeseni su tijekom inicijalizacije sustava!
     * Nazivi proizvoljnih varijabli odgovaraju mjerenoj varijabli!
     * Obratiti paznju na nazive registara AdcXResu... ->
@@ -174,9 +175,9 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
         offset_cal_idx = offset_cal_idx + 1; // uvecanje brojaca poziva ISR-a tijekom kalibracije
 
         // mjesto predvideno za pohranu ocitanih vrijednosti registara:
-        Ia_cal += Ia_regs;
-        Ib_cal += Ib_regs;
-        Ic_cal += Ic_regs;
+       Ia_cal += Ia_regs;
+       Ib_cal += Ib_regs;
+       Ic_cal += Ic_regs;
 
         if(offset_cal_idx >= offset_cal_total){
             // mjesto predvideno za usrednjavanje,
@@ -185,15 +186,13 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
             Ib_cal = (Ib_cal / offset_cal_total);
             Ic_cal = (Ic_cal / offset_cal_total);
 
-            if((Ia_cal <= 2254 && Ia_cal >= 2248) &&
-                    (Ib_cal <= 2254 && Ib_cal >= 2248) &&
-                    (Ic_cal <= 2254 && Ic_cal >= 2248)) {
-            // postavljanje zastavice da je kalibracija zavrsena
-            offset_cal_idx = 0;
-            offset_cal_done = TRUE;
-            }
+
+                // postavljanje zastavice da je kalibracija zavrsena
+                            offset_cal_idx = 0;
+                            offset_cal_done = TRUE;
+
+
         }
-    }
 #ifdef _LAUNCHXL_F28379D
         // Interrupt Acknowledge
         AdcbRegs.ADCINTFLGCLR.bit.ADCINT1=1;
@@ -209,22 +208,32 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
         // mjesto predvideno za izracun vrijednosti napona i struja na
         // temelju ocitanih vrijednosti registara:
-        Ia = calculate_current(&Ia_regs);
-        Ib = calculate_current(&Ib_regs);
-        Ic = calculate_current(&Ic_regs);
 
-        Ia_pu = calculate_current_pu(&Ia);
-        Ib_pu = calculate_current_pu(&Ib);
-        Ic_pu = calculate_current_pu(&Ic);
 
-        Ua = calculate_voltage(&Ua_regs);
-        Ub = calculate_voltage(&Ub_regs);
-        Uc = calculate_voltage(&Uc_regs);
 
-        Ua_pu = calculate_voltage_pu(&Ua);
-        Ub_pu = calculate_voltage_pu(&Ub);
-        Uc_pu = calculate_voltage_pu(&Uc);
 
+            //Efektivna nula
+            Ia_0 = calculate_current(&Ia_cal);
+            Ib_0 = calculate_current(&Ib_cal);
+            Ic_0 = calculate_current(&Ic_cal);
+            //
+
+            Ia = calculate_current(&Ia_regs) - Ia_0;
+            Ib = calculate_current(&Ib_regs) - Ib_0;
+            Ic = calculate_current(&Ic_regs) - Ic_0;
+
+
+            Ia_pu = calculate_current_pu(&Ia);
+            Ib_pu = calculate_current_pu(&Ib);
+            Ic_pu = calculate_current_pu(&Ic);
+
+            Ua = calculate_voltage(&Ua_regs);
+            Ub = calculate_voltage(&Ub_regs);
+            Uc = calculate_voltage(&Uc_regs);
+
+            Ua_pu = calculate_voltage_pu(&Ua);
+            Ub_pu = calculate_voltage_pu(&Ub);
+            Uc_pu = calculate_voltage_pu(&Uc);
 
     /*
      * Dio koda za ukljucenje tranzistora gornje grane jedne faze
