@@ -40,11 +40,18 @@ float Ic_pu = 0;
 float Ua_pu = 0;
 float Ub_pu = 0;
 float Uc_pu = 0;
+float Udc_pu = 0;
 
 float Ia_0 = 0;
 float Ib_0 = 0;
 float Ic_0 = 0;
 
+int provjera = 0;
+float calculated_TBPRD_A = 0;
+float calculated_TBPRD_B = 0;
+int real_TBPRD_A = 0;
+int real_TBPRD_B = 0;
+int vrsta_modulacije = 0 //Sluzit ce za modulaciju jedne ili obje grane pretvaraca
 
 
 /*
@@ -70,7 +77,7 @@ int16 enable_switch = FALSE;
 /*
  * referentna vrijednost iz vanjskog sustava
  */
-float32 ref_val = FALSE;
+float32 ref_val = 12;
 
 /*
  * Deklaracija varijabli za upis perioda vodenja u registre PWM modula
@@ -230,10 +237,56 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
             Ua = calculate_voltage(&Ua_regs);
             Ub = calculate_voltage(&Ub_regs);
             Uc = calculate_voltage(&Uc_regs);
+            Udc = calculate_voltage(&Udc_regs);
+
 
             Ua_pu = calculate_voltage_pu(&Ua);
             Ub_pu = calculate_voltage_pu(&Ub);
             Uc_pu = calculate_voltage_pu(&Uc);
+            Udc_pu = calculate_voltage_pu(&Udc);
+
+
+            /* Tek ako je sweitch upaljen mogu nastaviti s racunanjem */
+            if(enable_switch) {
+                continue;
+            }
+
+            /* Kod za provjeru ref_val vrijednosti */
+            provjera = check_ref_val(&Udc);
+
+            if(provjera == 0) {
+                continue;
+            } else {
+                while(1);
+            }
+
+            /* Kod za izracun iznosa koji se upisuje u CMP_pwm1 */
+            //Prvo je potrebno provjeriti koji se nacin upravljanja koristi
+
+            if(vrsta_modulacije == 0) {        //Upravljanje samo jednom granom
+                calculated_TBPRD_A = calculate_duty_cycle(&ref_val, &Udc);
+                real_TBPRD_A = floorf(calculated_TBPRD);
+
+
+            } else if(vrsta_modulacije == 1) {  //Upravljanje sa dvije grane
+
+
+
+                calculated_TBPRD_A = calculate_duty_cycle2(&ref_val, &Udc);
+                real_TBPRD_A = floorf(calculated_TBPRD);
+
+                real_TBPRD_B = INV_PWM_TBPRD - real_TBPRD_A;
+
+
+            }
+
+
+
+
+
+
+
+
 
     /*
      * Dio koda za ukljucenje tranzistora gornje grane jedne faze
@@ -255,14 +308,15 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     // izvrsavanje filtra
     filter_calc(&filt_example);
 
-    if(enable_switch){
-        CMP_pwm1 = INV_PWM_TBPRD;
-    }
-    else {
-        CMP_pwm1 = 0;
-        CMP_pwm2 = 0;
-        CMP_pwm3 = 0;
-    }
+//    if(enable_switch){
+//        CMP_pwm1 = real_TBPRD_A;
+//        CMP_pwm2 = real_TBPRD_B;
+//    }
+//    else {
+//        CMP_pwm1 = 0;
+//        CMP_pwm2 = 0;
+//        CMP_pwm3 = 0;
+//    }
 
 
     /*
@@ -287,10 +341,14 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
     // Upis u registre PWM-a
 #ifdef _LAUNCHXL_F28379D
-    EPwm1Regs.CMPA.bit.CMPA = CMP_pwm1;
+
+    EPwm1Regs.CMPA.bit.CMPA = real_TBPRD_A;
     EPwm2Regs.CMPA.bit.CMPA = CMP_pwm2;
     EPwm3Regs.CMPA.bit.CMPA = CMP_pwm3;
-
+    //Switchaj donji Fet B grane
+    if(vrsta_modulacije == 1) {
+    EPwm2Regs.CMPB.bit.CMPB = real_TBPRD_B;
+    }
     // Interrupt Acknowledge
     AdcbRegs.ADCINTFLGCLR.bit.ADCINT1=1;
     PieCtrlRegs.PIEACK.all=PIEACK_GROUP1;

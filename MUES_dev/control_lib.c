@@ -1,6 +1,6 @@
 #include "control_lib.h"
 #include "settings.h"
-
+extern float32 ref_val;
 
 // Initalization function for filter
 void filter_init (filter_t *filter, float tf, float t_samp)
@@ -45,5 +45,38 @@ float calculate_current_pu(float *value) {
 
 
     return *value / I_B;
+
+}
+
+float check_ref_val (float *value) {
+
+    if( ref_val <= fabs(*value) ) {
+
+        return 0;
+    } else {
+
+        return 1 //Error code da nesto ne stima;
+    }
+}
+
+float calculate_duty_cycle (float *ref_val, float *Udc) {
+
+    if(*Udc == 0) {
+        return 2 //Error code da je Udc trenutno nula;
+    }
+
+    return (*ref_val / *Udc) * 5000;
+
+}
+
+float calculate_duty_cycle2 (float *ref_val , float *Udc) {
+    if(*Udc == 0) {
+
+        return 3 //Error code da je Udc trenutno nula;
+    }
+
+
+
+    return (5000 * (*ref_val) + 5000) / (2 * (*Udc));
 
 }
