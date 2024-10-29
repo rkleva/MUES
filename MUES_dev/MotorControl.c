@@ -46,12 +46,12 @@ float Ia_0 = 0;
 float Ib_0 = 0;
 float Ic_0 = 0;
 
-int provjera = 0;
+float provjera = 0;
 float calculated_TBPRD_A = 0;
 float calculated_TBPRD_B = 0;
 int real_TBPRD_A = 0;
 int real_TBPRD_B = 0;
-int vrsta_modulacije = 0 //Sluzit ce za modulaciju jedne ili obje grane pretvaraca
+int vrsta_modulacije = 0; //Sluzit ce za modulaciju jedne ili obje grane pretvaraca
 
 
 /*
@@ -248,32 +248,42 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
             /* Tek ako je sweitch upaljen mogu nastaviti s racunanjem */
             if(enable_switch) {
-                continue;
+
             }
 
             /* Kod za provjeru ref_val vrijednosti */
-            provjera = check_ref_val(&Udc);
+            provjera = check_ref_val(&ref_val, &Udc);
 
-            if(provjera == 0) {
-                continue;
-            } else {
-                while(1);
-            }
+            ref_val = provjera;
 
             /* Kod za izracun iznosa koji se upisuje u CMP_pwm1 */
             //Prvo je potrebno provjeriti koji se nacin upravljanja koristi
 
             if(vrsta_modulacije == 0) {        //Upravljanje samo jednom granom
-                calculated_TBPRD_A = calculate_duty_cycle(&ref_val, &Udc);
-                real_TBPRD_A = floorf(calculated_TBPRD);
 
+
+
+                if(ref_val < 0) {
+                    //Onda ne smijem paliti fazu A nego samo fazu B
+                    calculated_TBPRD_B = calculate_duty_cycle(&ref_val, &Udc);
+                    real_TBPRD_B = floor(calculated_TBPRD_B);
+
+                } else {
+
+
+                    calculated_TBPRD_A = calculate_duty_cycle(&ref_val, &Udc);
+                    if(calculated_TBPRD_A == 2) {  //Dogodila se greška
+                        while(1);
+                    }
+                    real_TBPRD_A = floorf(calculated_TBPRD_A);
+                }
 
             } else if(vrsta_modulacije == 1) {  //Upravljanje sa dvije grane
 
 
 
                 calculated_TBPRD_A = calculate_duty_cycle2(&ref_val, &Udc);
-                real_TBPRD_A = floorf(calculated_TBPRD);
+                real_TBPRD_A = floorf(calculated_TBPRD_A);
 
                 real_TBPRD_B = INV_PWM_TBPRD - real_TBPRD_A;
 
@@ -341,13 +351,35 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
     // Upis u registre PWM-a
 #ifdef _LAUNCHXL_F28379D
+    if(enable_switch) {
 
-    EPwm1Regs.CMPA.bit.CMPA = real_TBPRD_A;
-    EPwm2Regs.CMPA.bit.CMPA = CMP_pwm2;
-    EPwm3Regs.CMPA.bit.CMPA = CMP_pwm3;
-    //Switchaj donji Fet B grane
-    if(vrsta_modulacije == 1) {
-    EPwm2Regs.CMPB.bit.CMPB = real_TBPRD_B;
+
+        if(ref_val < 0) {
+            EPwm1Regs.CMPA.bit.CMPA = CMP_pwm1;
+            EPwm2Regs.CMPA.bit.CMPA = real_TBPRD_B;
+            EPwm3Regs.CMPA.bit.CMPA = CMP_pwm3;
+
+        } else {
+
+        EPwm1Regs.CMPA.bit.CMPA = real_TBPRD_A;
+        EPwm2Regs.CMPA.bit.CMPA = CMP_pwm2;
+        EPwm3Regs.CMPA.bit.CMPA = CMP_pwm3;
+        }
+        if(vrsta_modulacije == 1) {
+
+        EPwm1Regs.CMPA.bit.CMPA = real_TBPRD_A;
+        EPwm2Regs.CMPA.bit.CMPA = real_TBPRD_B;
+        EPwm3Regs.CMPA.bit.CMPA = CMP_pwm3;
+        }
+
+
+
+    } else {
+        EPwm1Regs.CMPA.bit.CMPA = CMP_pwm1;
+        EPwm2Regs.CMPA.bit.CMPA = CMP_pwm2;
+        EPwm3Regs.CMPA.bit.CMPA = CMP_pwm3;
+
+
     }
     // Interrupt Acknowledge
     AdcbRegs.ADCINTFLGCLR.bit.ADCINT1=1;

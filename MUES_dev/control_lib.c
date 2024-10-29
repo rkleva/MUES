@@ -48,35 +48,40 @@ float calculate_current_pu(float *value) {
 
 }
 
-float check_ref_val (float *value) {
+float check_ref_val (float *ref_val, float *Udc) {
 
-    if( ref_val <= fabs(*value) ) {
+    if(fabs(*ref_val) >= fabs(*Udc) ) {
 
-        return 0;
-    } else {
-
-        return 1 //Error code da nesto ne stima;
+        *ref_val = *Udc;
     }
+
+    return *ref_val;
 }
 
 float calculate_duty_cycle (float *ref_val, float *Udc) {
 
     if(*Udc == 0) {
-        return 2 //Error code da je Udc trenutno nula;
+        return 2; //Error code da je Udc trenutno nula;
     }
 
-    return (*ref_val / *Udc) * 5000;
+    if(*ref_val < 0) {
+
+        return -(*ref_val / *Udc) * 5000;
+    }
+    else {
+        return (*ref_val / *Udc) * 5000;
+    }
 
 }
 
 float calculate_duty_cycle2 (float *ref_val , float *Udc) {
     if(*Udc == 0) {
 
-        return 3 //Error code da je Udc trenutno nula;
+        return 3; //Error code da je Udc trenutno nula;
     }
 
 
 
-    return (5000 * (*ref_val) + 5000) / (2 * (*Udc));
+    return (5000 * (*ref_val) + 5000 * (*Udc)) / (2 * (*Udc));
 
 }

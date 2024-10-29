@@ -39,7 +39,7 @@ float calculate_current(int *adc_vrijednost);
 float calculate_voltage(int *adc_vrijednost);
 float calculate_voltage_pu(float *value);
 float calculate_current_pu(float *value);
-float check_ref_val (float *value);
+float check_ref_val (float *ref_val, float *Udc);
 float calculate_duty_cycle (float *ref_val, float *Udc);
 float calculate_duty_cycle2 (float *ref_val , float *Udc);
 #endif //CONTROL_LIB_H_
