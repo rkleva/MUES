@@ -43,5 +43,6 @@ float check_ref_val (float *ref_val, float *Udc);
 float calculate_duty_cycle (float *ref_val, float *Udc);
 float calculate_duty_cycle2 (float *ref_val , float *Udc);
 float calculate_sin (float *Amp, float *theta);
+float set_ref_current(float *ref_current, float *meas_current);
 
 #endif //CONTROL_LIB_H_

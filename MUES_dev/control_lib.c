@@ -2,7 +2,10 @@
 #include "settings.h"
 #include <math.h>
 extern float32 ref_val;
-
+extern float e_k;
+extern float u_k;
+extern float e_k_1;
+extern float u_k_1;
 // Initalization function for filter
 void filter_init (filter_t *filter, float tf, float t_samp)
 {
@@ -96,3 +99,13 @@ float calculate_sin (float *Amp, float *theta) {
     }
 }
 
+//float set_ref_current(float *ref_current, float *meas_current) {
+//
+//
+//
+//
+//
+//
+//
+//
+//}

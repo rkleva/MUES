@@ -36,7 +36,7 @@ float Udc = 0;
 
 float Amp = 12.0;
 float f = 25;
-float ref_sinus = 0;
+float ref_current = 0;
 float theta = 0;
 
 float Ia_pu = 0;
@@ -57,6 +57,16 @@ float calculated_TBPRD_B = 0;
 int real_TBPRD_A = 0;
 int real_TBPRD_B = 0;
 int vrsta_modulacije = 0; //Sluzit ce za modulaciju jedne ili obje grane pretvaraca
+
+float e_k = 0;
+float u_k = 0;
+float e_k_1 = 0;
+float u_k_1 = 0;
+float Kr = 0.7;
+float Ti = 0.00233;
+float T = CTRL_TS;
+int broj_koraka = 0;
+
 
 
 /*
@@ -97,10 +107,10 @@ Uint16 CMP_pwm3 = 0;
  * u ovom dijelu koda ce se inicijalizirati varijable
  * funkcije za snimanje podataka na 4. lab vjezbi
  */
-float32 datalogBuff1[400]; //Jedan cu koristiti za izlazni napon
-float32 datalogBuff2[400];  //Drugi koristim za struju faze A
-float32 datalogBuff3[400];
-float32 datalogBuff4[400];
+float32 datalogBuff1[500]; //Jedan cu koristiti za izlazni napon
+float32 datalogBuff2[500];  //Drugi koristim za struju faze A
+float32 datalogBuff3[500];
+float32 datalogBuff4[500];
 
 #pragma DATA_SECTION(datalogBuff1, "datalog_data");
 #pragma DATA_SECTION(datalogBuff2, "datalog_data");
@@ -153,9 +163,9 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
         dlog_4ch.output_ptr2 = &datalogBuff2[0];
         dlog_4ch.output_ptr3 = &datalogBuff3[0];
         dlog_4ch.output_ptr4 = &datalogBuff4[0];
-        dlog_4ch.size = 400;
+        dlog_4ch.size = 500;
         dlog_4ch.status = 2;
-        dlog_4ch.pre_scalar = 2;
+        dlog_4ch.pre_scalar = 8;
         dlog_4ch.trig_value = 0.1;
 
 
@@ -326,21 +336,24 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
                 real_TBPRD_B = INV_PWM_TBPRD - real_TBPRD_A;
 
 
-            } else if(vrsta_modulacije == 2) { //Upravljanje sa dvije grane za generiranje sinusa
+            } else if(vrsta_modulacije == 2) { //Upravljanje sa dvije grane za generiranje reference struje
 
-                if(enable_switch) {
+                if((enable_switch==1) && (broj_koraka >= 1)) {
+                    u_k_1 = u_k;
+                    e_k_1 = e_k;
+                    e_k = ref_current - Ia;
+                    u_k = ( e_k * (Kr*T + Kr*Ti) - e_k_1 * (Kr * Ti) + u_k_1 * Ti ) / Ti;
 
-                    //Racunanje kuta
 
-                    theta = theta + 2*PI*f*CTRL_TS;
-                    //theta = 0.0157;
-                    //Poziv funkcije za racunanje napona
-                    ref_sinus = calculate_sin(&Amp, &theta);
-                    calculated_TBPRD_A = calculate_duty_cycle2(&ref_sinus, &Udc);
+                    calculated_TBPRD_A = calculate_duty_cycle2(&u_k, &Udc);
                     real_TBPRD_A = floorf(calculated_TBPRD_A);
-
                     real_TBPRD_B = INV_PWM_TBPRD - real_TBPRD_A;
+                    broj_koraka += 1;
 
+                } else if (enable_switch == 1 && vrsta_modulacije == 2){
+
+                    e_k = ref_current - Ia;
+                    broj_koraka += 1;
 
 
                 }
@@ -351,9 +364,7 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
 
 
-            if(theta > (2*PI) ) {
-                theta = 0;
-            }
+
 
 
 
@@ -400,7 +411,7 @@ filter_t filt_example = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
      * funkcije za snimanje podataka na 4. lab vjezbi
      */
     if(vrsta_modulacije == 2) {
-     dlogCh1 = ref_sinus;
+     dlogCh1 = u_k; //300 ms signala bi trebao vidjeti
      dlogCh2 = Ia;
      dlogCh3 = 0;
      dlogCh4 = 0;
